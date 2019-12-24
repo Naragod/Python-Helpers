@@ -3,7 +3,7 @@ import random as rn
 import json
 
 # example:
-# 
+#
 # output = [
 #   {
 #     vin: "2DGHS45TS3GH3",
@@ -20,6 +20,7 @@ import json
 #     rtc_time_end: 1503521400
 #   }
 # ]
+
 
 def generate_random_val(t_range):
   return rn.randint(0, t_range)
@@ -38,7 +39,7 @@ def generate_vin(size=17):
 def generate_entry():
   start_time = generate_time()
   return {
-      "vin": generate_vin(), 
+      "vin": generate_vin(),
       "dissipation_value": generate_random_val(100),
       "trip_milage": generate_random_val(100),
       "rtc_time_start": start_time,

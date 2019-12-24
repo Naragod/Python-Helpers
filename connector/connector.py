@@ -3,7 +3,6 @@ import json
 import subprocess
 import psycopg2
 import psycopg2.extras
-from logger import logger
 import random as rn
 
 
@@ -22,8 +21,8 @@ class Connector:
       )
     except psycopg2.Error as e:
       if str(e.pgerror) != 'None':
-        logger.info(e.pgerror)
-        logger.info(e.diag.message_detail)
+        print(e.pgerror)
+        print(e.diag.message_detail)
         raise ValueError()
 
   def closeConnection(self, connection):
@@ -40,10 +39,10 @@ class Connector:
       result = [dict(record) for record in cur]
     except psycopg2.Error as e:
       if str(e.pgerror) != 'None':
-        logger.info(e.pgerror)
-        logger.info(e.diag.message_detail)
+        print(e.pgerror)
+        print(e.diag.message_detail)
       else:
-        logger.info("transaction success")
+        print("transaction success")
 
     finally:
       # close connection

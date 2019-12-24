@@ -1,5 +1,4 @@
-from connector import connector
-from connector import config
+# from connector import connector
 import dataManipulation as dMan
 import dataGenerator as dGen
 
@@ -39,10 +38,10 @@ e_per_k = dMan.filter_list_by_param(
 # ***************************************************************
 
 
-print(data)
+# print(data)
 # print(trip_milage)
 # print(dissipation_value)
-# print(e_per_k)
+print(e_per_k)
 
 # e_per_k_mean = dMan.calculate_mean(get_val(e_per_k))
 # e_per_k_deviation = dMan.calculate_standard_deviation(get_val(e_per_k))
@@ -53,8 +52,8 @@ print("e_per_k_zscoes: {0}".format(e_per_k_zscores))
 # average_milage = dMan.calculate_mean(get_val(trip_milage))
 # deviation_milage = dMan.calculate_standard_deviation(get_val(trip_milage))
 # average_dissipation = dMan.calculate_mean(get_val(dissipation_value))
-# print(data)
-# print(trip_milage)
-# print(dissipation_value)
-# print(average_milage)
-# print(deviation_milage)
+
+# print(type(e_per_k_zscores))
+
+milages = dMan.calc_all_milages_to_maintance(e_per_k_zscores)
+print("Milages: {0}".format(milages))
