@@ -1,33 +1,60 @@
 from connector import connector
 from connector import config
+import dataManipulation as dMan
+import dataGenerator as dGen
+
+# alias
+# ***************************************************************
+get_val = dMan.get_dict_val
+
+# set data
+# ***************************************************************
+data = dGen.generate_data(10)
+data = dGen.set_energy_per_milage(data)
+
+# manipulate data
+# ***************************************************************
+trip_milage = dMan.filter_list_by_param(
+    data,
+    ["vin", "trip_milage"],
+    "trip_milage",
+    True
+)
+dissipation_value = dMan.filter_list_by_param(
+    data,
+    ["vin", "dissipation_value"],
+    "dissipation_value",
+    True
+)
+
+e_per_k = dMan.filter_list_by_param(
+    data,
+    ["vin", "e_per_k"],
+    "e_per_k",
+    True
+)
 
 
-
-# *************************************************************************
-def get_connection(db_name):
-  dbConfig = config.configuration[db_name]
-
-  return connector.Connector(dbConfig)
-
-# def get_car_data(db_name, vin, rtc_start, rtc_end):
-#   connection = get_connection(db_name)
-#   output_trip_mileage = 0
-
-#   trip_query = "SELECT * FROM scanner_data_trip WHERE vin = '%s' and rtc_time_start = %d and rtc_time_end = %d" % (
-#       vin, rtc_start, rtc_end)
-
-#   result = connection.(query=trip_query, env_db=db_name)
-#   if len(result) == 1:
-#     output_trip_mileage = result[0]['mileage']
-#     logger.info('mileage found successfully')
-#   else:
-#     logger.info('more than one record found when retrieving mileage')
-#     logger.info('setting trip mileage to 0 (default)')
-
-#   return output_trip_mileage
+# print data
+# ***************************************************************
 
 
-query = "Select id, vin from car limit 10"
-ci = get_connection("staging")
-result = ci.query(query)
-print(result)
+print(data)
+# print(trip_milage)
+# print(dissipation_value)
+# print(e_per_k)
+
+# e_per_k_mean = dMan.calculate_mean(get_val(e_per_k))
+# e_per_k_deviation = dMan.calculate_standard_deviation(get_val(e_per_k))
+e_per_k_zscores = dMan.calculate_z_score(get_val(e_per_k))
+# print("e_per_k_mean: {0}".format(e_per_k_mean))
+# print("e_per_k_deviation: {0}".format(e_per_k_deviation))
+print("e_per_k_zscoes: {0}".format(e_per_k_zscores))
+# average_milage = dMan.calculate_mean(get_val(trip_milage))
+# deviation_milage = dMan.calculate_standard_deviation(get_val(trip_milage))
+# average_dissipation = dMan.calculate_mean(get_val(dissipation_value))
+# print(data)
+# print(trip_milage)
+# print(dissipation_value)
+# print(average_milage)
+# print(deviation_milage)
