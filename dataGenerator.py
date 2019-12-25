@@ -22,6 +22,10 @@ import json
 # ]
 
 
+# vin_size=17
+vin_size = 2
+
+
 def generate_random_val(t_range):
   return rn.randint(0, t_range)
 
@@ -32,7 +36,7 @@ def generate_time():
   return base + generate_random_val(t_range)
 
 
-def generate_vin(size=17):
+def generate_vin(size=vin_size):
   return ''.join(rn.choice(string.ascii_uppercase + string.digits) for _ in range(size))
 
 
@@ -47,12 +51,12 @@ def generate_entry():
   }
 
 
-def generate_data(size, index=0, result=[]):
-  if(index == size):
+def generate_data(size, result=[]):
+  if(size == 0):
     return result
 
   result.append(generate_entry())
-  return generate_data(size, index + 1, result)
+  return generate_data(size - 1, result)
 
 
 # get energy/km dissipated for all data points
