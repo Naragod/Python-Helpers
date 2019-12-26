@@ -4,15 +4,18 @@ from scipy import stats
 # ***************************************************************
 decimal_places = 4
 
+
 # general functions
 # ***************************************************************
-
-# general implementation of a recursive function.
-# result must be passed in with every call to this function.
-# It seems if result is not passed in, it can live as a closure
-# with values from other function calls.
+def toNumPlaces(data, places=decimal_places):
+  return implement_recursion(data, lambda x: round(x, places), [])
 
 
+# general implementation of a recursive function in which data
+# from the array is popped off on each iteration. The result
+# must be passed in with every call to this function. It seems
+# that if result is not passed in, its value will not be
+# implitly cleared and remain populated.
 def implement_recursion(data, cb, result):
   if len(data) == 0:
     return result
@@ -21,6 +24,8 @@ def implement_recursion(data, cb, result):
   return implement_recursion(data, cb, result)
 
 
+# mathematical functions
+# ***************************************************************
 def calculate_mean(data):
   return sum(data) / len(data)
 
@@ -33,10 +38,6 @@ def calculate_standard_deviation(data):
 def calculate_z_score(data):
   raw_list = stats.zscore(data).tolist()
   return toNumPlaces(raw_list)
-
-
-def toNumPlaces(data, places=decimal_places):
-  return implement_recursion(data, lambda x: round(x, places), [])
 
 
 # milage distribution
@@ -52,8 +53,36 @@ def calc_all_milages_to_maintance(z_scores):
   return implement_recursion(z_scores, lambda x: calc_milage_to_maintance(x), [])
 
 
-# data manipulation functions
+# filter functions
 # ***************************************************************
+def key_exits(obj, key):
+  if key in obj:
+    return True
+  return False
+
+
+# returns the index of the first obj found in the list or -1 otherwise
+def search_for(data, key, value, index=0):
+  if len(data) == index:
+    return -1
+
+  current = data[index]
+  if key_exits(current, key):
+    if current[key] == value:
+      return index
+
+  return search_for(data, key, value, index + 1)
+
+
+# returns an array of all the indices of the searched for object, key and value
+def search_for_all(data, key, value, result=[], index=0):
+  res_index = search_for(data, key, value, index)
+  if res_index == -1:
+    return result
+
+  result.append(res_index)
+  return search_for_all(data, key, value, result, res_index + 1)
+
 
 # Receives in a dictionary and a list of keys or a single key.
 # It will return the dictionary filtered by the specified params.

@@ -1,3 +1,4 @@
 __pycache__/
 connector/config.py
 test_data/*
+.vscode/

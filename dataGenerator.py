@@ -2,6 +2,7 @@ import string
 import random as rn
 import json
 
+
 # example:
 #
 # output = [
@@ -22,10 +23,14 @@ import json
 # ]
 
 
+# variables
+# ***************************************************************
 # vin_size=17
 vin_size = 2
 
 
+# functions
+# ***************************************************************
 def generate_random_val(t_range):
   return rn.randint(0, t_range)
 
@@ -40,15 +45,38 @@ def generate_vin(size=vin_size):
   return ''.join(rn.choice(string.ascii_uppercase + string.digits) for _ in range(size))
 
 
+# The number of keys and values needs to be the same
+def generate_template(keys=[], values=[], result={}):
+  if len(keys) != len(values):
+    print("Keys and values do not have the same number of items.")
+    return result
+
+  if len(keys) == 0:
+    return result
+
+  key = keys.pop(0)
+  value = values.pop(0)
+  result[key] = value
+  return generate_template(keys, values, result)
+
+
 def generate_entry():
   start_time = generate_time()
-  return {
-      "vin": generate_vin(),
-      "dissipation_value": generate_random_val(100),
-      "trip_milage": generate_random_val(100),
-      "rtc_time_start": start_time,
-      "rtc_time_end": start_time + generate_random_val(10)
-  }
+  keys = [
+      "vin",
+      "dissipation_value",
+      "trip_milage",
+      "rtc_time_start",
+      "rtc_time_end"
+  ]
+  values = [
+      generate_vin(),
+      generate_random_val(100),
+      generate_random_val(100),
+      start_time,
+      start_time + generate_random_val(10)
+  ]
+  return generate_template(keys, values)
 
 
 def generate_data(size, result=[]):
@@ -68,3 +96,4 @@ def set_energy_per_milage(data):
     e_per_k = d["dissipation_value"] / d["trip_milage"]
     d["e_per_k"] = round(e_per_k, 4)
   return data
+

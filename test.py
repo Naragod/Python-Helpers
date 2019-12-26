@@ -15,7 +15,7 @@ get_val = dMan.get_dict_val
 
 # Generate Data
 # ***************************************************************
-init._run_()
+init._run_(file_path, 100)
 data = io.read_from_file(
     file_path,
     lambda _file: json.load(_file))
@@ -47,6 +47,12 @@ e_per_k = dMan.filter_list_by_param(
 # print data
 # ***************************************************************
 
+
+
+
+
+# search for a specific vin
+# print(dMan.search_for_all(data, "vin", "3U"))
 
 # print(data)
 # print(trip_milage)

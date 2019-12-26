@@ -11,7 +11,7 @@ file_path = "test_data/__test__.json"
 # generate data
 # ***************************************************************
 def _generate_data(size):
-  data = dGen.generate_data(10)
+  data = dGen.generate_data(size)
   data = dGen.set_energy_per_milage(data)
   return data
 
@@ -24,3 +24,4 @@ def _run_(file_path=file_path, size=10):
   data = _generate_data(size)
   io.write_to_file(file_path, lambda _file: json.dump(data, _file), True)
   print("File {0} written.".format(file_path))
+
