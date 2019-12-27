@@ -79,7 +79,7 @@ async def main():
   start._init_(file_path, initial_data_size)
 
   # begin streaming data
-  asyncio.ensure_future(start.stream_data(stream_interval, stream_size))
+  # asyncio.ensure_future(start.stream_data(stream_interval, stream_size))
 
   await logic()
 
