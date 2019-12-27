@@ -15,7 +15,8 @@ def toNumPlaces(data, places=decimal_places):
 # from the array is popped off on each iteration. The result
 # must be passed in with every call to this function. It seems
 # that if result is not passed in, its value will not be
-# implitly cleared and remain populated.
+# implitly cleared and remain populated. I believe it will be
+# treated as a global object.
 def implement_recursion(data, cb, result):
   if len(data) == 0:
     return result

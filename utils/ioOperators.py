@@ -6,7 +6,7 @@ def _open_file(file_path, mode, cb):
 
 # write to file
 def write_to_file(file_path, cb, overwrite=False):
-  permission = "a" if overwrite else "w"
+  permission = "w" if overwrite else "a"
   _open_file(file_path, permission, lambda _file: cb(_file))
 
 

@@ -1,7 +1,7 @@
 # from connector import connector
-import dataManipulation as dMan
-import ioOperators as io
-import init
+from utils import dataManipulation as dMan
+from utils import ioOperators as io
+from helpers import start
 import json
 
 # variables
@@ -15,7 +15,7 @@ get_val = dMan.get_dict_val
 
 # Generate Data
 # ***************************************************************
-init._run_(file_path, 100)
+start._run_(file_path, 100)
 data = io.read_from_file(
     file_path,
     lambda _file: json.load(_file))
@@ -52,7 +52,7 @@ e_per_k = dMan.filter_list_by_param(
 
 
 # search for a specific vin
-# print(dMan.search_for_all(data, "vin", "3U"))
+print(dMan.search_for_all(data, "vin", "F8"))
 
 # print(data)
 # print(trip_milage)

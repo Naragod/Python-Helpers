@@ -46,7 +46,7 @@ def generate_vin(size=vin_size):
 
 
 # The number of keys and values needs to be the same
-def generate_template(keys=[], values=[], result={}):
+def generate_template(keys, values, result):
   if len(keys) != len(values):
     print("Keys and values do not have the same number of items.")
     return result
@@ -76,7 +76,7 @@ def generate_entry():
       start_time,
       start_time + generate_random_val(10)
   ]
-  return generate_template(keys, values)
+  return generate_template(keys, values, {})
 
 
 def generate_data(size, result=[]):
