@@ -76,7 +76,7 @@ def search_for(data, key, value, index=0):
 
 
 # returns an array of all the indices of the searched for object, key and value
-def search_for_all(data, key, value, result=[], index=0):
+def search_for_all(data, key, value, result, index=0):
   res_index = search_for(data, key, value, index)
   if res_index == -1:
     return result

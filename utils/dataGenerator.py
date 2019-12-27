@@ -59,7 +59,7 @@ def generate_template(keys, values, result):
   result[key] = value
   return generate_template(keys, values, result)
 
-
+# this is example specific. Rewrite this function as per data needs
 def generate_entry():
   start_time = generate_time()
   keys = [
@@ -79,7 +79,7 @@ def generate_entry():
   return generate_template(keys, values, {})
 
 
-def generate_data(size, result=[]):
+def generate_data(size, result):
   if(size == 0):
     return result
 
