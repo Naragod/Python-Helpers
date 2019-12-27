@@ -3,7 +3,7 @@ from utils import dataManipulation as dMan
 from utils import ioOperators as io
 from helpers import start
 import asyncio
-import json
+
 
 # variables
 # ***************************************************************
@@ -20,10 +20,7 @@ get_val = dMan.get_dict_val
 
 async def logic():
   while True:
-    data = io.read_from_file(
-        file_path,
-        lambda _file: json.load(_file)
-    )
+    data = io.read_json_file(file_path)
     # print("Beginning search for:{0}".format(
     #     dMan.search_for_all(data, "vin", "F8", [])))
 

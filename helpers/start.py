@@ -1,6 +1,5 @@
-
+# from connector import connector
 import asyncio
-import json
 import os.path as path
 from utils import ioOperators as io
 from utils import dataGenerator as dGen
@@ -12,7 +11,6 @@ import sys
 sys.path.append("..")
 
 
-# from connector import connector
 # variables
 # ***************************************************************
 file_path = "test_data/__test__.json"
@@ -33,7 +31,7 @@ def _init_(file_path=file_path, size=10):
     return
 
   data = _generate_data(size)
-  io.write_to_file(file_path, lambda _file: json.dump(data, _file))
+  io.write_json_file(file_path, data)
   print("File {0} written.".format(file_path))
 
 
@@ -45,13 +43,10 @@ async def stream_data(size, wait_time):
   # it would be good to build a cache here so that I am not
   # reading from the db or in this case from the file on
   # every new data generated
-  file_data = io.read_from_file(
-      file_path,
-      lambda _file: json.load(_file)
-  )
+  file_data = io.read_json_file(file_path)
   file_data.extend(data)
 
-  io.write_to_file(file_path, lambda _file: json.dump(file_data, _file))
+  io.write_json_file(file_path, file_data)
   print("Streaming data... New entries added: size={0}".format(len(file_data)))
   await asyncio.sleep(wait_time)
   await stream_data(size, wait_time)
