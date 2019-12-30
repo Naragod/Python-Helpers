@@ -13,7 +13,9 @@ sys.path.append("..")
 
 # variables
 # ***************************************************************
-file_path = "test_data/__test__.json"
+config_path = "config.json"
+config = io.read_json_file(config_path)
+file_path = config["file_path"]
 
 
 # generate data

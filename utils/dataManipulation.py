@@ -55,15 +55,15 @@ def calculate_z_score(data):
 
 # milage distribution
 # ***************************************************************
-def calc_milage_to_maintance(z_score):
+def calc_milage_to_maintenance(z_score):
   # we are assuming a few things here.
   # Primarily that 98% of cars on the road have travelled between 20000 and 80000 units (km or miles)
   full_result = mean_mileage + (z_score * mileage_std)
   return round(full_result, decimal_places)
 
 
-def calc_all_milages_to_maintance(z_scores):
-  return implement_recursion(z_scores, lambda x: calc_milage_to_maintance(x), [])
+def calc_all_milages_to_maintenance(z_scores):
+  return implement_recursion(z_scores, lambda x: calc_milage_to_maintenance(x), [])
 
 
 # filter functions
@@ -125,6 +125,14 @@ def get_dict_val(dictionary):
   return dictionary[key]
 
 
+# this will append the `key` to every object
+# in `data` with values in the same order as `values.`
+# This will mutate the original `data` object
+def append_prop_to_objs(data, key, values):
+  for index, x in enumerate(data):
+    x[key] = values[index]
+
+
 # returns a list of items which matched the specified value.
 # if `keepNonMatching` is set to True, the last item of this list
 # will be set to a list containing all no-matching values
@@ -144,12 +152,12 @@ def aggregate_by_value(data, key, value, result, index=0, keepNonMatching=True):
 
 
 # aggregate milage and energy values
-def aggregate_values(data, result):
+def aggregate_values(data, clause, result):
   if len(data) == 0:
     return result
 
   current = data[0]
-  aggregate_data = aggregate_by_value(data, "vin", current["vin"], [[]])
+  aggregate_data = aggregate_by_value(data, clause, current[clause], [[]])
   # everything except last item
   values = aggregate_data[:-1]
   # last item which is a list of non-matching values
@@ -166,4 +174,4 @@ def aggregate_values(data, result):
   current["dissipation_value"] = dissipation_value
   current["e_per_k"] = round(e_per_k, 4)
   result.append(current)
-  return aggregate_values(data, result)
+  return aggregate_values(data, clause, result)

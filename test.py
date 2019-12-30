@@ -1,16 +1,17 @@
-# from connector import connector
+from connector import connector
 from utils import dataManipulation as dMan
 from utils import ioOperators as io
 from helpers import start
 import asyncio
 
-
 # variables
 # ***************************************************************
-file_path = "test_data/__test__.json"
-stream_size = 1
-initial_data_size = 10
-stream_interval = 1
+config_path = "config.json"
+config = io.read_json_file(config_path)
+file_path = config["file_path"]
+stream_size = config["stream_size"]
+initial_data_size = config["initial_data_size"]
+stream_interval = config["stream_interval"]
 
 
 # alias
@@ -68,7 +69,7 @@ async def logic():
 
     # print(type(e_per_k_zscores))
 
-    milages = dMan.calc_all_milages_to_maintance(e_per_k_zscores)
+    milages = dMan.calc_all_milages_to_maintenance(e_per_k_zscores)
     print("Milages: {0}".format(milages))
     await asyncio.sleep(5)
 
@@ -79,10 +80,11 @@ async def main():
   start._init_(file_path, initial_data_size)
 
   # begin streaming data
-  # asyncio.ensure_future(start.stream_data(stream_interval, stream_size))
+  asyncio.ensure_future(start.stream_data(stream_interval, stream_size))
 
   await logic()
 
 
 loop = asyncio.get_event_loop()
 loop.run_until_complete(main())
+

@@ -1,0 +1,9 @@
+{
+  "file_path": "test_data/__test__.json",
+  "stream_size": 1,
+  "initial_data_size": 10,
+  "stream_interval": 1,
+  "mean_mileage": 50000,
+  "mileage_std": 12931.0344,
+  "decimal_places": 4
+}
