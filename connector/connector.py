@@ -29,6 +29,7 @@ class Connector:
     connection.close()
 
   def query(self, query):
+    result = []
     try:
       # open connection per query
       conn = self.establishConnection()

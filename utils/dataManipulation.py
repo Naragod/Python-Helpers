@@ -1,8 +1,20 @@
 from scipy import stats
+from utils import ioOperators as io
 
-# global variables
+
+# adds higher directory to python modules path
+# allowing for quick and dirty import
+import sys
+sys.path.append("..")
+
+
+# variables
 # ***************************************************************
-decimal_places = 4
+config_path = "config.json"
+config = io.read_json_file(config_path)
+decimal_places = config["decimal_places"]
+mean_mileage = config["mean_mileage"]
+mileage_std = config["mileage_std"]
 
 
 # general functions
@@ -17,12 +29,12 @@ def toNumPlaces(data, places=decimal_places):
 # that if result is not passed in, its value will not be
 # implitly cleared and remain populated. I believe it will be
 # treated as a global object.
-def implement_recursion(data, cb, result):
-  if len(data) == 0:
+def implement_recursion(data, cb, result, index=0):
+  if len(data) == index:
     return result
 
-  result.append(cb(data.pop(0)))
-  return implement_recursion(data, cb, result)
+  result.append(cb(data[0]))
+  return implement_recursion(data, cb, result, index + 1)
 
 
 # mathematical functions
@@ -46,7 +58,7 @@ def calculate_z_score(data):
 def calc_milage_to_maintance(z_score):
   # we are assuming a few things here.
   # Primarily that 98% of cars on the road have travelled between 20000 and 80000 units (km or miles)
-  full_result = 50000 + (z_score * 12931.0344)
+  full_result = mean_mileage + (z_score * mileage_std)
   return round(full_result, decimal_places)
 
 
@@ -111,3 +123,47 @@ def filter_list_by_param(data, params, group_by="", aggregate=False):
 def get_dict_val(dictionary):
   key = [key for key in dictionary.keys()][0]
   return dictionary[key]
+
+
+# returns a list of items which matched the specified value.
+# if `keepNonMatching` is set to True, the last item of this list
+# will be set to a list containing all no-matching values
+def aggregate_by_value(data, key, value, result, index=0, keepNonMatching=True):
+  if len(data) == index:
+    return result
+
+  current = data[index]
+  if current[key] == value:
+    result.insert(0, current)
+
+  if keepNonMatching and current[key] != value:
+    # add obj to last item(which is a list of `other` values) of result
+    result[-1].append(current)
+
+  return aggregate_by_value(data, key, value, result, index + 1)
+
+
+# aggregate milage and energy values
+def aggregate_values(data, result):
+  if len(data) == 0:
+    return result
+
+  current = data[0]
+  aggregate_data = aggregate_by_value(data, "vin", current["vin"], [[]])
+  # everything except last item
+  values = aggregate_data[:-1]
+  # last item which is a list of non-matching values
+  data = aggregate_data[-1]
+
+  trip_milage = 0
+  dissipation_value = 0
+  for val in values:
+    trip_milage += val["trip_milage"]
+    dissipation_value += val["dissipation_value"]
+
+  e_per_k = dissipation_value / trip_milage
+  current["trip_milage"] = trip_milage
+  current["dissipation_value"] = dissipation_value
+  current["e_per_k"] = round(e_per_k, 4)
+  result.append(current)
+  return aggregate_values(data, result)

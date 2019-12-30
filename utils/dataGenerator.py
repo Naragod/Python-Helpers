@@ -46,20 +46,22 @@ def generate_vin(size=vin_size):
 
 
 # The number of keys and values needs to be the same
-def generate_template(keys, values, result):
+def generate_template(keys, values, result, index=0):
   if len(keys) != len(values):
     print("Keys and values do not have the same number of items.")
     return result
 
-  if len(keys) == 0:
+  if len(keys) == index:
     return result
 
-  key = keys.pop(0)
-  value = values.pop(0)
+  key = keys[0]
+  value = values[0]
   result[key] = value
-  return generate_template(keys, values, result)
+  return generate_template(keys, values, result, index + 1)
 
 # this is example specific. Rewrite this function as per data needs
+
+
 def generate_entry():
   start_time = generate_time()
   keys = [
@@ -96,4 +98,3 @@ def set_energy_per_milage(data):
     e_per_k = d["dissipation_value"] / d["trip_milage"]
     d["e_per_k"] = round(e_per_k, 4)
   return data
-
