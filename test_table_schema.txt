@@ -1,0 +1,10 @@
+CREATE TABLE public.test_table
+(
+  id serial primary key,
+  vin text NOT NULL,
+  dissipation_value integer,
+  trip_mileage integer,
+  rtc_time_start integer,
+  rtc_time_end integer,
+  e_per_k numeric
+)
