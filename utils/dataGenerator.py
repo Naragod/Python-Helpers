@@ -9,14 +9,14 @@ import json
 #   {
 #     vin: "2DGHS45TS3GH3",
 #     dissipation_value: 0.0345
-#     trip_milage: 53,
+#     trip_mileage: 53,
 #     rtc_time_start: 1503521399,
 #     rtc_time_end: 1503521400
 #   },
 #   {
 #     vin: "2DGHS45TS3GH3",
 #     dissipation_value: 0.0345
-#     trip_milage: 53,
+#     trip_mileage: 53,
 #     rtc_time_start: 1503521399,
 #     rtc_time_end: 1503521400
 #   }
@@ -67,7 +67,7 @@ def generate_entry():
   keys = [
       "vin",
       "dissipation_value",
-      "trip_milage",
+      "trip_mileage",
       "rtc_time_start",
       "rtc_time_end"
   ]
@@ -90,11 +90,11 @@ def generate_data(size, result):
 
 
 # get energy/km dissipated for all data points
-# if the trip milage is 0, set it to 1. This will need to be changed
-def set_energy_per_milage(data):
+# if the trip mileage is 0, set it to 1. This will need to be changed
+def set_energy_per_mileage(data):
   for d in data:
-    if d["trip_milage"] == 0:
-      d["trip_milage"] = 1
-    e_per_k = d["dissipation_value"] / d["trip_milage"]
+    if d["trip_mileage"] == 0:
+      d["trip_mileage"] = 1
+    e_per_k = d["dissipation_value"] / d["trip_mileage"]
     d["e_per_k"] = round(e_per_k, 4)
   return data

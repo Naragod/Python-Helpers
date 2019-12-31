@@ -27,10 +27,10 @@ async def logic():
 
     # manipulate data
     # ***************************************************************
-    trip_milage = dMan.filter_list_by_param(
+    trip_mileage = dMan.filter_list_by_param(
         data,
-        ["vin", "trip_milage"],
-        "trip_milage",
+        ["vin", "trip_mileage"],
+        "trip_mileage",
         True
     )
     dissipation_value = dMan.filter_list_by_param(
@@ -54,7 +54,7 @@ async def logic():
     # print(dMan.search_for_all(data, "vin", "F8", []))
 
     # print(data)
-    # print(trip_milage)
+    # print(trip_mileage)
     # print(dissipation_value)
     # print(e_per_k)
     # e_per_k_mean = dMan.calculate_mean(get_val(e_per_k))
@@ -63,14 +63,14 @@ async def logic():
     # print("e_per_k_mean: {0}".format(e_per_k_mean))
     # print("e_per_k_deviation: {0}".format(e_per_k_deviation))
     print("e_per_k_zscoes: {0}".format(e_per_k_zscores))
-    # average_milage = dMan.calculate_mean(get_val(trip_milage))
-    # deviation_milage = dMan.calculate_standard_deviation(get_val(trip_milage))
+    # average_mileage = dMan.calculate_mean(get_val(trip_mileage))
+    # deviation_mileage = dMan.calculate_standard_deviation(get_val(trip_mileage))
     # average_dissipation = dMan.calculate_mean(get_val(dissipation_value))
 
     # print(type(e_per_k_zscores))
 
-    milages = dMan.calc_all_milages_to_maintenance(e_per_k_zscores)
-    print("Milages: {0}".format(milages))
+    mileages = dMan.calc_all_mileages_to_maintenance(e_per_k_zscores)
+    print("mileages: {0}".format(mileages))
     await asyncio.sleep(5)
 
 

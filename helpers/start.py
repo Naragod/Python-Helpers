@@ -22,7 +22,7 @@ file_path = config["file_path"]
 # ***************************************************************
 def _generate_data(size):
   data = dGen.generate_data(size, [])
-  data = dGen.set_energy_per_milage(data)
+  data = dGen.set_energy_per_mileage(data)
   return data
 
 

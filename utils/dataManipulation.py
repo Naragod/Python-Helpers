@@ -53,17 +53,17 @@ def calculate_z_score(data):
   return toNumPlaces(raw_list)
 
 
-# milage distribution
+# mileage distribution
 # ***************************************************************
-def calc_milage_to_maintenance(z_score):
+def calc_mileage_to_maintenance(z_score):
   # we are assuming a few things here.
   # Primarily that 98% of cars on the road have travelled between 20000 and 80000 units (km or miles)
   full_result = mean_mileage + (z_score * mileage_std)
   return round(full_result, decimal_places)
 
 
-def calc_all_milages_to_maintenance(z_scores):
-  return implement_recursion(z_scores, lambda x: calc_milage_to_maintenance(x), [])
+def calc_all_mileages_to_maintenance(z_scores):
+  return implement_recursion(z_scores, lambda x: calc_mileage_to_maintenance(x), [])
 
 
 # filter functions
@@ -151,7 +151,7 @@ def aggregate_by_value(data, key, value, result, index=0, keepNonMatching=True):
   return aggregate_by_value(data, key, value, result, index + 1)
 
 
-# aggregate milage and energy values
+# aggregate mileage and energy values
 def aggregate_values(data, clause, result):
   if len(data) == 0:
     return result
@@ -163,14 +163,14 @@ def aggregate_values(data, clause, result):
   # last item which is a list of non-matching values
   data = aggregate_data[-1]
 
-  trip_milage = 0
+  trip_mileage = 0
   dissipation_value = 0
   for val in values:
-    trip_milage += val["trip_milage"]
+    trip_mileage += val["trip_mileage"]
     dissipation_value += val["dissipation_value"]
 
-  e_per_k = dissipation_value / trip_milage
-  current["trip_milage"] = trip_milage
+  e_per_k = dissipation_value / trip_mileage
+  current["trip_mileage"] = trip_mileage
   current["dissipation_value"] = dissipation_value
   current["e_per_k"] = round(e_per_k, 4)
   result.append(current)
