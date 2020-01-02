@@ -5,5 +5,5 @@
   "stream_interval": 1,
   "mean_mileage": 50000,
   "mileage_std": 12931.0344,
-  "decimal_places": 4
+  "decimal_places": 8
 }

@@ -1,90 +1,240 @@
-from connector import connector
-from utils import dataManipulation as dMan
-from utils import ioOperators as io
-from helpers import start
-import asyncio
+import os
+import json
+import subprocess
+import psycopg2
+import psycopg2.extras
+import random as rn
+import math
+
+
+class Connector:
+  def __init__(self, dbConfig):
+    self._dbConfig = dbConfig
+
+  def _establishConnection(self):
+    try:
+      return psycopg2.connect(
+          dbname=self._dbConfig["dbName"],
+          user=self._dbConfig["user"],
+          password=self._dbConfig["password"],
+          host=self._dbConfig["host"],
+          port=self._dbConfig["port"]
+      )
+    except psycopg2.Error as e:
+      if str(e.pgerror) != 'None':
+        print(e.pgerror)
+        print(e.diag.message_detail)
+        raise ValueError()
+
+  def closeConnection(self, connection):
+    connection.close()
+
+  def query(self, query):
+    result = []
+    try:
+      # open connection per query
+      conn = self._establishConnection()
+      conn.autocommit = True
+      # The cursor
+      cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+      cur.execute(query)
+      result = [dict(record) for record in cur]
+    except psycopg2.Error as e:
+      if str(e.pgerror) != 'None':
+        print(e.pgerror)
+        print(e.diag.message_detail)
+      else:
+        print("transaction success")
+
+    finally:
+      # close connection
+      cur.close()
+      conn.close()
+    return result
+
+
+# io functions
+# ***************************************************************
+def _open_file(file_path, mode, cb):
+  with open(file_path, mode) as file_pointer:
+    return cb(file_pointer)
+
+
+def read_from_file(file_path, cb):
+  return _open_file(file_path, "r", lambda _file: cb(_file))
+
+
+# useful implementation to read from a json file
+def read_json_file(file_path):
+  return read_from_file(
+      file_path,
+      lambda _file: json.load(_file)
+  )
+
 
 # variables
 # ***************************************************************
 config_path = "config.json"
-config = io.read_json_file(config_path)
-file_path = config["file_path"]
-stream_size = config["stream_size"]
-initial_data_size = config["initial_data_size"]
-stream_interval = config["stream_interval"]
+config = read_json_file(config_path)
+decimal_places = config["decimal_places"]
+db_config = read_json_file("connector/config.json")["staging"]
+conn = Connector(db_config)
+
+
+# utility functions
+# ***************************************************************
+
+
+# format a number to `digit` number of places.
+# if `onlyFractional` is set to true, then return only the fractional part of the number
+def to_number_of_places(data, digits=decimal_places, only_fractional=False, ):
+  try:
+    num = float(data)
+  except:
+    raise ValueError(
+        "${0} is not a number. Please check your input.".format(data)
+    )
+
+  if only_fractional:
+    num = num % 1
+
+  return round(num, digits)
+
+
+def get_data(vin, rtc_start, rtc_end):
+  trip_query = "SELECT * FROM scanner_data_pid WHERE vin = '%s' and rtc_time >= %d and rtc_time <= %d" % (
+      vin, rtc_start, rtc_end)
+
+  return conn.query(trip_query)
+
+
+# This assumes a dictionary with one single key.
+# If a multikey dictionary is passed in, it will return the value of the first key
+def get_dict_val(dictionary):
+  key = [key for key in dictionary.keys()][0]
+  return dictionary[key]
+
+
+# only takes in a number `value`
+def num_of_digits(value):
+  if value > 0:
+    return int(math.log10(value))+1
+  elif value == 0:
+    return 1
+  else:
+    return int(math.log10(-value))+2  # +1 if you don't count the '-'
+
+
+# only takes in a number `num`
+def shift_left_by(num, places=None):
+  if places is None:
+    places = num_of_digits(num)
+  return num / pow(10, places)
+
+
+def sort_list_by(data, key, in_place=True, descending=False):
+  try:
+    if in_place:
+      return data.sort(key=lambda x: x[key], reverse=descending)
+    return sorted(data, key=lambda x: x[key], reverse=descending)
+  except:
+    print(
+        "There was an error in sort_list_by. Data:{0}, key:{1}".format(data, key))
+    return
+
+
+def split_acc_data_by_params(sensor_data):
+  x = []
+  y = []
+  z = []
+  timestamp = []
+
+  for data_point in sensor_data:
+    x.append(round_number(data_point["x"]))
+    y.append(round_number(data_point["y"]))
+    z.append(round_number(data_point["z"]))
+    # timestamp is given as a whole number to save space by omitting
+    # the 0s and decimals. Therefore, they need to be re-added here.
+    fractional_timestamp = shift_left_by(float(data_point["t_interval"]))
+    timestamp.append(round_number(fractional_timestamp))
+
+  return {
+      "x": x,
+      "y": y,
+      "z": z,
+      "timestamp": timestamp
+  }
+
+
+def get_nested_property(obj, prop):
+  try:
+    nested = obj[prop]
+  except:
+    return obj
+  else:
+    return get_nested_property(nested, prop)
+
+
+def get_data_with_ids(data, identifiers):
+  f_list = []
+  for element in data:
+    if element["id"] not in identifiers:
+      continue
+
+    try:
+      j_list = json.loads(element["data"])
+    except ValueError:
+      # j_list=[element["data"]]
+      continue
+    f_list.append(j_list)
+
+  return f_list
 
 
 # alias
 # ***************************************************************
-get_val = dMan.get_dict_val
+get_val = get_dict_val
+round_number = to_number_of_places
 
 
-async def logic():
-  while True:
-    data = io.read_json_file(file_path)
-    # print("Beginning search for:{0}".format(
-    #     dMan.search_for_all(data, "vin", "F8", [])))
+def format_data():
+  vin = "2T1BU4EEXBC751673"  # "1G1JC5444R7252367"
+  rtc_start = 1577113682  # 1573767218
+  rtc_end = 1577115020  # 1573769218
+  ids = ["accelerometer", "210D", "speed"]
+  final_res = []
 
-    # manipulate data
-    # ***************************************************************
-    trip_mileage = dMan.filter_list_by_param(
-        data,
-        ["vin", "trip_mileage"],
-        "trip_mileage",
-        True
-    )
-    dissipation_value = dMan.filter_list_by_param(
-        data,
-        ["vin", "dissipation_value"],
-        "dissipation_value",
-        True
-    )
+  data = get_data(vin, rtc_start, rtc_end)
 
-    e_per_k = dMan.filter_list_by_param(
-        data,
-        ["vin", "e_per_k"],
-        "e_per_k",
-        True
-    )
+  for element in data:
+    nested_data = get_nested_property(element, "data")
+    device_timestamp = get_data_with_ids(nested_data, ["deviceTimestamp"])
+    coordinates = get_data_with_ids(nested_data, ids)
+    # print(coordinates)
+    for arr in coordinates:
+      sorted_coor = sort_list_by(arr, "t_interval", False)
+      if sorted_coor == None:
+        continue
 
-    # print data
-    # ***************************************************************
+      coordinate_data = split_acc_data_by_params(sorted_coor)
+      for key, value in coordinate_data.items():
+        if key == "timestamp":
+          continue
+        result = {
+            "t_interval": device_timestamp,
+            "dir": key,
+            "values": value,
+            "timestamp": coordinate_data["timestamp"]
+        }
 
-    # search for a specific vin
-    # print(dMan.search_for_all(data, "vin", "F8", []))
+        final_res.append(result)
 
-    # print(data)
-    # print(trip_mileage)
-    # print(dissipation_value)
-    # print(e_per_k)
-    # e_per_k_mean = dMan.calculate_mean(get_val(e_per_k))
-    # e_per_k_deviation = dMan.calculate_standard_deviation(get_val(e_per_k))
-    e_per_k_zscores = dMan.calculate_z_score(get_val(e_per_k))
-    # print("e_per_k_mean: {0}".format(e_per_k_mean))
-    # print("e_per_k_deviation: {0}".format(e_per_k_deviation))
-    print("e_per_k_zscoes: {0}".format(e_per_k_zscores))
-    # average_mileage = dMan.calculate_mean(get_val(trip_mileage))
-    # deviation_mileage = dMan.calculate_standard_deviation(get_val(trip_mileage))
-    # average_dissipation = dMan.calculate_mean(get_val(dissipation_value))
-
-    # print(type(e_per_k_zscores))
-
-    mileages = dMan.calc_all_mileages_to_maintenance(e_per_k_zscores)
-    print("mileages: {0}".format(mileages))
-    await asyncio.sleep(5)
+  return final_res
 
 
-async def main():
-  # Generate Data
-  # ***************************************************************
-  start._init_(file_path, initial_data_size)
-
-  # begin streaming data
-  asyncio.ensure_future(start.stream_data(stream_interval, stream_size))
-
-  await logic()
+def main():
+  formatted_data = format_data()
+  print(formatted_data)
 
 
-loop = asyncio.get_event_loop()
-loop.run_until_complete(main())
-
+main()

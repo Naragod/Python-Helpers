@@ -1,5 +1,6 @@
 from connector import connector
 from utils import dataManipulation as dMan
+from utils import dataGenerator as dGen
 from utils import ioOperators as io
 
 
@@ -69,4 +70,21 @@ dMan.append_prop_to_objs(f_data, "mileage_to_maintenance", mileages)
 print(f_data)
 
 
-
+# write to db
+# ***************************************************************
+# keys = [
+#     "vin",
+#     "date_computed",
+#     "z_score",
+#     "predicted_brake_job_mileage",
+#     "last_known_brake_maintenance_date",
+#     "last_known_brake_job_mileage",
+#     "cohort_spec",
+#     "cohort_hash",
+#     "cohort_n",
+# ],
+# def aaaa():
+#   for obj in data:
+#     obj["date_computed"] = datetime.datetime.utcnow()
+#     dGen.generate_template()
+# insert_to_table(conn, computed_data, "brake_model_mileage")

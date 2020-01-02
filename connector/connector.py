@@ -10,7 +10,7 @@ class Connector:
   def __init__(self, dbConfig):
     self._dbConfig = dbConfig
 
-  def establishConnection(self):
+  def _establishConnection(self):
     try:
       return psycopg2.connect(
           dbname=self._dbConfig["dbName"],
@@ -32,7 +32,7 @@ class Connector:
     result = []
     try:
       # open connection per query
-      conn = self.establishConnection()
+      conn = self._establishConnection()
       conn.autocommit = True
       # The cursor
       cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)

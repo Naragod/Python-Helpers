@@ -19,8 +19,24 @@ mileage_std = config["mileage_std"]
 
 # general functions
 # ***************************************************************
-def toNumPlaces(data, places=decimal_places):
-  return implement_recursion(data, lambda x: round(x, places), [])
+# format a number to `digit` number of places.
+# if `onlyFractional` is set to true, then return only the fractional part of the number
+def to_number_of_places(data, digits=decimal_places, only_fractional=False, ):
+  try:
+    num = float(data)
+  except:
+    raise ValueError(
+        "${0} is not a number. Please check your input.".format(data)
+    )
+
+  if only_fractional:
+    num = num % 1
+
+  return round(num, digits)
+
+
+def round_list(data, places=decimal_places):
+  return implement_recursion(data, lambda x: to_number_of_places(x, places), [])
 
 
 # general implementation of a recursive function in which data
@@ -50,7 +66,7 @@ def calculate_standard_deviation(data):
 
 def calculate_z_score(data):
   raw_list = stats.zscore(data).tolist()
-  return toNumPlaces(raw_list)
+  return round_list(raw_list)
 
 
 # mileage distribution
