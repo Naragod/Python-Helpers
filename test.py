@@ -83,11 +83,20 @@ conn = Connector(db_config)
 
 # utility functions
 # ***************************************************************
+def sort_list_by(data, key, in_place=True, descending=False):
+  try:
+    if in_place:
+      return data.sort(key=lambda x: x[key], reverse=descending)
+    return sorted(data, key=lambda x: x[key], reverse=descending)
+  except:
+    print(
+        "There was an error in sort_list_by. Data:{0}, key:{1}".format(data, key))
+    return
 
 
 # format a number to `digit` number of places.
 # if `onlyFractional` is set to true, then return only the fractional part of the number
-def to_number_of_places(data, digits=decimal_places, only_fractional=False, ):
+def to_number_of_places(data, digits=decimal_places, only_fractional=False):
   try:
     num = float(data)
   except:
@@ -99,13 +108,6 @@ def to_number_of_places(data, digits=decimal_places, only_fractional=False, ):
     num = num % 1
 
   return round(num, digits)
-
-
-def get_data(vin, rtc_start, rtc_end):
-  trip_query = "SELECT * FROM scanner_data_pid WHERE vin = '%s' and rtc_time >= %d and rtc_time <= %d" % (
-      vin, rtc_start, rtc_end)
-
-  return conn.query(trip_query)
 
 
 # This assumes a dictionary with one single key.
@@ -132,17 +134,6 @@ def shift_left_by(num, places=None):
   return num / pow(10, places)
 
 
-def sort_list_by(data, key, in_place=True, descending=False):
-  try:
-    if in_place:
-      return data.sort(key=lambda x: x[key], reverse=descending)
-    return sorted(data, key=lambda x: x[key], reverse=descending)
-  except:
-    print(
-        "There was an error in sort_list_by. Data:{0}, key:{1}".format(data, key))
-    return
-
-
 def split_acc_data_by_params(sensor_data):
   x = []
   y = []
@@ -153,7 +144,7 @@ def split_acc_data_by_params(sensor_data):
     x.append(round_number(data_point["x"]))
     y.append(round_number(data_point["y"]))
     z.append(round_number(data_point["z"]))
-    # timestamp is given as a whole number to save space by omitting
+    # t_interval is given as a whole number to save space by omitting
     # the 0s and decimals. Therefore, they need to be re-added here.
     fractional_timestamp = shift_left_by(float(data_point["t_interval"]))
     timestamp.append(round_number(fractional_timestamp))
@@ -184,7 +175,6 @@ def get_data_with_ids(data, identifiers):
     try:
       j_list = json.loads(element["data"])
     except ValueError:
-      # j_list=[element["data"]]
       continue
     f_list.append(j_list)
 
@@ -197,20 +187,30 @@ get_val = get_dict_val
 round_number = to_number_of_places
 
 
-def format_data():
-  vin = "2T1BU4EEXBC751673"  # "1G1JC5444R7252367"
-  rtc_start = 1577113682  # 1573767218
-  rtc_end = 1577115020  # 1573769218
-  ids = ["accelerometer", "210D", "speed"]
+# implementation
+# ***************************************************************
+# this function will format data passed in from the scanner_data_pid table.
+# it will return a list of structured data in the following format:
+# {
+#   {
+#     't_interval': [1577115015],
+#     'dir': 'x',
+#     'values': [0.05305481, -0.01808167, -0.01412964, 0.00686646, -0.02998352], 
+#     'timestamp': [0.112396, 0.39927, 0.479988, 0.680331, 0.880513]
+#   }, 
+#   {
+#     't_interval': [1577115015],
+#     'dir': 'y',
+#     'values': [0.05303221, -0.01804367, -0.02332964, 0.044286646, -0.02997852], 
+#     'timestamp': [0.112396, 0.39927, 0.479988, 0.680331, 0.880513]
+#   }, ...
+# }
+def format_data(data, ids_to_format):
   final_res = []
-
-  data = get_data(vin, rtc_start, rtc_end)
-
   for element in data:
     nested_data = get_nested_property(element, "data")
     device_timestamp = get_data_with_ids(nested_data, ["deviceTimestamp"])
-    coordinates = get_data_with_ids(nested_data, ids)
-    # print(coordinates)
+    coordinates = get_data_with_ids(nested_data, ids_to_format)
     for arr in coordinates:
       sorted_coor = sort_list_by(arr, "t_interval", False)
       if sorted_coor == None:
@@ -220,20 +220,37 @@ def format_data():
       for key, value in coordinate_data.items():
         if key == "timestamp":
           continue
+
         result = {
             "t_interval": device_timestamp,
             "dir": key,
             "values": value,
             "timestamp": coordinate_data["timestamp"]
         }
-
         final_res.append(result)
 
   return final_res
 
 
+# this function specifically obtains data from scanner_data_pid
+# this is not a general function
+def get_data(vin, rtc_start, rtc_end):
+  trip_query = "SELECT * FROM scanner_data_pid WHERE vin = '%s' and rtc_time >= %d and rtc_time <= %d" % (
+      vin, rtc_start, rtc_end)
+
+  return conn.query(trip_query)
+
+
 def main():
-  formatted_data = format_data()
+  vin = "2T1BU4EEXBC751673"  # "1G1JC5444R7252367"
+  rtc_start = 1577113682  # 1573767218
+  rtc_end = 1577115020  # 1573769218
+
+  # This list contains the id values whose data property should formatted
+  ids_to_format = ["accelerometer", "210D", "speed"]
+
+  data = get_data(vin, rtc_start, rtc_end)
+  formatted_data = format_data(data, ids_to_format)
   print(formatted_data)
 
 
