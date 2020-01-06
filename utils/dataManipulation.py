@@ -113,6 +113,7 @@ def search_for_all(data, key, value, result, index=0):
   return search_for_all(data, key, value, result, res_index + 1)
 
 
+
 # Receives in a dictionary and a list of keys or a single key.
 # It will return the dictionary filtered by the specified params.
 def filter_dict_by_param(data, params):
@@ -131,8 +132,15 @@ def filter_list_by_param(data, params, group_by="", aggregate=False):
     print("The chosen aggregate value `groub_by` must be in the filtered list `params`")
     return False
 
-  return {group_by: [filter_dict_by_param(d_point, params)[group_by] for d_point in data]}
+  result = {}
+  for d_point in data:
+    # previously all entries in data had to contain all of the parameters mentioned.
+    try:
+      result[group_by] = filter_dict_by_param(d_point, params)[group_by]
+    except KeyError:
+      continue
 
+  return result
 
 # This assumes a dictionary with one single key.
 # If a multikey dictionary is passed in, it will return the value of the first key
@@ -149,22 +157,27 @@ def append_prop_to_objs(data, key, values):
     x[key] = values[index]
 
 
+def aggregate_by_value(data, key, value, keepNonMatching=True):
+  index = 0
+  result = {"found": [], "other": []}
+  return _calc_aggregate(data, key, value, result, index, keepNonMatching)
+
 # returns a list of items which matched the specified value.
 # if `keepNonMatching` is set to True, the last item of this list
 # will be set to a list containing all no-matching values
-def aggregate_by_value(data, key, value, result, index=0, keepNonMatching=True):
+def _calc_aggregate(data, key, value, result, index, keepNonMatching=True):
   if len(data) == index:
     return result
 
   current = data[index]
   if current[key] == value:
-    result.insert(0, current)
+    result["found"].append(current)
 
   if keepNonMatching and current[key] != value:
     # add obj to last item(which is a list of `other` values) of result
-    result[-1].append(current)
+    result["other"].append(current)
 
-  return aggregate_by_value(data, key, value, result, index + 1)
+  return _calc_aggregate(data, key, value, result, index + 1, keepNonMatching)
 
 
 # aggregate mileage and energy values
