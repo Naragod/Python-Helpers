@@ -19,24 +19,8 @@ mileage_std = config["mileage_std"]
 
 # general functions
 # ***************************************************************
-# format a number to `digit` number of places.
-# if `onlyFractional` is set to true, then return only the fractional part of the number
-def to_number_of_places(data, digits=decimal_places, only_fractional=False, ):
-  try:
-    num = float(data)
-  except:
-    raise ValueError(
-        "${0} is not a number. Please check your input.".format(data)
-    )
-
-  if only_fractional:
-    num = num % 1
-
-  return round(num, digits)
-
-
-def round_list(data, places=decimal_places):
-  return implement_recursion(data, lambda x: to_number_of_places(x, places), [])
+def toNumPlaces(data, places=decimal_places):
+  return implement_recursion(data, lambda x: round(x, places), [])
 
 
 # general implementation of a recursive function in which data
@@ -66,7 +50,7 @@ def calculate_standard_deviation(data):
 
 def calculate_z_score(data):
   raw_list = stats.zscore(data).tolist()
-  return round_list(raw_list)
+  return toNumPlaces(raw_list)
 
 
 # mileage distribution
@@ -113,7 +97,6 @@ def search_for_all(data, key, value, result, index=0):
   return search_for_all(data, key, value, result, res_index + 1)
 
 
-
 # Receives in a dictionary and a list of keys or a single key.
 # It will return the dictionary filtered by the specified params.
 def filter_dict_by_param(data, params):
@@ -132,15 +115,21 @@ def filter_list_by_param(data, params, group_by="", aggregate=False):
     print("The chosen aggregate value `groub_by` must be in the filtered list `params`")
     return False
 
-  result = {}
-  for d_point in data:
-    # previously all entries in data had to contain all of the parameters mentioned.
-    try:
-      result[group_by] = filter_dict_by_param(d_point, params)[group_by]
-    except KeyError:
-      continue
+  return {group_by: [filter_dict_by_param(d_point, params)[group_by] for d_point in data]}
 
-  return result
+
+def filter_list(data, params):
+  values = {}
+  for element in data:
+    f_element = filter_dict_by_param(element, params)
+    for key, value in f_element.items():
+      try:
+        values[key].append(value)
+      except KeyError:
+        values[key] = [value]
+
+  return values
+
 
 # This assumes a dictionary with one single key.
 # If a multikey dictionary is passed in, it will return the value of the first key
@@ -157,27 +146,22 @@ def append_prop_to_objs(data, key, values):
     x[key] = values[index]
 
 
-def aggregate_by_value(data, key, value, keepNonMatching=True):
-  index = 0
-  result = {"found": [], "other": []}
-  return _calc_aggregate(data, key, value, result, index, keepNonMatching)
-
 # returns a list of items which matched the specified value.
 # if `keepNonMatching` is set to True, the last item of this list
 # will be set to a list containing all no-matching values
-def _calc_aggregate(data, key, value, result, index, keepNonMatching=True):
+def aggregate_by_value(data, key, value, result, index=0, keepNonMatching=True):
   if len(data) == index:
     return result
 
   current = data[index]
   if current[key] == value:
-    result["found"].append(current)
+    result.insert(0, current)
 
   if keepNonMatching and current[key] != value:
     # add obj to last item(which is a list of `other` values) of result
-    result["other"].append(current)
+    result[-1].append(current)
 
-  return _calc_aggregate(data, key, value, result, index + 1, keepNonMatching)
+  return aggregate_by_value(data, key, value, result, index + 1)
 
 
 # aggregate mileage and energy values

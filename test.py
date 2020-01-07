@@ -77,8 +77,6 @@ def read_json_file(file_path):
 config_path = "config.json"
 config = read_json_file(config_path)
 decimal_places = config["decimal_places"]
-db_config = read_json_file("connector/config.json")["staging"]
-conn = Connector(db_config)
 
 
 # utility functions
@@ -91,12 +89,11 @@ def sort_list_by(data, key, in_place=True, descending=False):
   except:
     print(
         "There was an error in sort_list_by. Data:{0}, key:{1}".format(data, key))
-    return
 
 
 # format a number to `digit` number of places.
 # if `onlyFractional` is set to true, then return only the fractional part of the number
-def to_number_of_places(data, digits=decimal_places, only_fractional=False):
+def round_number(data, digits=decimal_places, only_fractional=False):
   try:
     num = float(data)
   except:
@@ -108,13 +105,6 @@ def to_number_of_places(data, digits=decimal_places, only_fractional=False):
     num = num % 1
 
   return round(num, digits)
-
-
-# This assumes a dictionary with one single key.
-# If a multikey dictionary is passed in, it will return the value of the first key
-def get_dict_val(dictionary):
-  key = [key for key in dictionary.keys()][0]
-  return dictionary[key]
 
 
 # only takes in a number `value`
@@ -166,7 +156,55 @@ def get_nested_property(obj, prop):
     return get_nested_property(nested, prop)
 
 
-def get_data_with_ids(data, identifiers):
+def filter_dict_by_param(data, params):
+  return {key: data[key] for key in data.keys() if key in params}
+
+
+# returns a filtered dictionary with keys taken from the params array.
+# the value of each key is an array of aggregate items in the data list
+# that share the same key. The shared _name property is the name
+# of the property that you want to associate with every element of the array
+def filter_list(data, params, shared_name, rename=""):
+  if(len(rename) == 0):
+    rename = shared_name
+
+  shared_values = {}
+  values = {}
+  for element in data:
+    shared_value = filter_dict_by_param(element, [shared_name])[shared_name]
+    f_element = filter_dict_by_param(element, params)
+    for key, value in f_element.items():
+      try:
+        shared_values[key].append(shared_value)
+      except KeyError:
+        shared_values[key] = [shared_value]
+
+      try:
+        values[key][rename] = shared_values[key]
+        values[key]["values"].append(value)
+      except KeyError:
+        values[key] = {}
+        values[key]["values"] = [value]
+
+  return values
+
+
+def get_filtered_data_obj(data, identifiers):
+  result = {}
+  for element in data:
+    for identity in identifiers:
+      if element["id"] != identity:
+        continue
+
+      try:
+        result[identity].append(element["data"])
+      except KeyError:
+        result[identity] = element["data"]
+
+  return result
+
+
+def get_filtered_data_list(data, identifiers):
   f_list = []
   for element in data:
     if element["id"] not in identifiers:
@@ -181,38 +219,50 @@ def get_data_with_ids(data, identifiers):
   return f_list
 
 
-# alias
-# ***************************************************************
-get_val = get_dict_val
-round_number = to_number_of_places
-
-
 # implementation
 # ***************************************************************
+def format_data(data, ids_to_format):
+  aggregate_data = []
+  prop_to_include = "deviceTimestamp"
+  include = ids_to_format + [prop_to_include]
+  for element in data:
+    nested_data = get_nested_property(element, "data")
+    f_data = get_filtered_data_obj(nested_data, include)
+    # ignore empty entries
+    if(len(f_data.items()) < 2):
+      continue
+
+    aggregate_data.append(f_data)
+
+  sorted_list = sort_list_by(aggregate_data, prop_to_include, False)
+  return filter_list(sorted_list, ids_to_format, prop_to_include, "timestamp")
+
+
 # this function will format data passed in from the scanner_data_pid table.
 # it will return a list of structured data in the following format:
 # {
 #   {
 #     't_interval': [1577115015],
 #     'dir': 'x',
-#     'values': [0.05305481, -0.01808167, -0.01412964, 0.00686646, -0.02998352], 
+#     'values': [0.05305481, -0.01808167, -0.01412964, 0.00686646, -0.02998352],
 #     'timestamp': [0.112396, 0.39927, 0.479988, 0.680331, 0.880513]
-#   }, 
+#   },
 #   {
 #     't_interval': [1577115015],
 #     'dir': 'y',
-#     'values': [0.05303221, -0.01804367, -0.02332964, 0.044286646, -0.02997852], 
+#     'values': [0.05303221, -0.01804367, -0.02332964, 0.044286646, -0.02997852],
 #     'timestamp': [0.112396, 0.39927, 0.479988, 0.680331, 0.880513]
 #   }, ...
 # }
-def format_data(data, ids_to_format):
+def format_accel_data(data, ids_to_format):
   final_res = []
   for element in data:
     nested_data = get_nested_property(element, "data")
-    device_timestamp = get_data_with_ids(nested_data, ["deviceTimestamp"])
-    coordinates = get_data_with_ids(nested_data, ids_to_format)
+    device_timestamp = get_filtered_data_list(nested_data, ["deviceTimestamp"])
+    coordinates = get_filtered_data_list(nested_data, ids_to_format)
     for arr in coordinates:
       sorted_coor = sort_list_by(arr, "t_interval", False)
+      # if there is an error sorting the data, ignore it as it is likely in an incorrect format
       if sorted_coor == None:
         continue
 
@@ -222,7 +272,7 @@ def format_data(data, ids_to_format):
           continue
 
         result = {
-            "t_interval": device_timestamp,
+            "t_interval": device_timestamp[0],
             "dir": key,
             "values": value,
             "timestamp": coordinate_data["timestamp"]
@@ -234,24 +284,39 @@ def format_data(data, ids_to_format):
 
 # this function specifically obtains data from scanner_data_pid
 # this is not a general function
-def get_data(vin, rtc_start, rtc_end):
-  trip_query = "SELECT * FROM scanner_data_pid WHERE vin = '%s' and rtc_time >= %d and rtc_time <= %d" % (
+def get_data(conn, vin, rtc_start, rtc_end):
+  trip_query = "SELECT * FROM scanner_data_pid WHERE vin = '%s' and rtc_time >= %d and rtc_time <= %d limit 10" % (
       vin, rtc_start, rtc_end)
 
   return conn.query(trip_query)
 
 
 def main():
-  vin = "2T1BU4EEXBC751673"  # "1G1JC5444R7252367"
-  rtc_start = 1577113682  # 1573767218
-  rtc_end = 1577115020  # 1573769218
+  # dev = "local"
+  dev = "staging"
+  db_config = read_json_file("connector/config.json")[dev]
+  conn = Connector(db_config)
+
+  # vin = "JTMBK32V086045753"  # "2T1BU4EEXBC751673"  # "1G1JC5444R7252367"
+  # rtc_start = 1578170804  # 1577113682  # 1573767218
+  # rtc_end = 1578171833  # 1577115020  # 1573769218
+
+  vin = "2T1BU4EEXBC751673"
+  rtc_start = 1577113682
+  rtc_end = 1577115020
 
   # This list contains the id values whose data property should formatted
   ids_to_format = ["accelerometer", "210D", "speed"]
+  # ids_to_format = ["210C", "210F", "2142"]
 
-  data = get_data(vin, rtc_start, rtc_end)
-  formatted_data = format_data(data, ids_to_format)
+  data = get_data(conn, vin, rtc_start, rtc_end)
+  formatted_data = format_accel_data(data, ids_to_format)
+  formatted_data_b = format_data(data, ["210C", "210F", "2142"])
+  # formatted_data = format_data(data, ids_to_format)
+
   print(formatted_data)
+  print("")
+  print(formatted_data_b)
 
 
 main()
