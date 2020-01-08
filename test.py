@@ -60,6 +60,12 @@ def _open_file(file_path, mode, cb):
     return cb(file_pointer)
 
 
+# write to file
+def write_to_file(file_path, cb, overwrite=True):
+  permission = "w" if overwrite else "a"
+  _open_file(file_path, permission, lambda _file: cb(_file))
+
+
 def read_from_file(file_path, cb):
   return _open_file(file_path, "r", lambda _file: cb(_file))
 
@@ -69,6 +75,14 @@ def read_json_file(file_path):
   return read_from_file(
       file_path,
       lambda _file: json.load(_file)
+  )
+
+
+# useful implementation to wrtie a json file
+def write_json_file(file_path, data):
+  write_to_file(
+      file_path,
+      lambda _file: json.dump(data, _file)
   )
 
 
@@ -180,12 +194,12 @@ def filter_list(data, params, shared_name, rename=""):
         shared_values[key] = [shared_value]
 
       try:
-        values[key][rename] = shared_values[key]
         values[key]["values"].append(value)
       except KeyError:
         values[key] = {}
         values[key]["values"] = [value]
-
+        values[key][rename] = shared_values[key]
+      
   return values
 
 
@@ -285,38 +299,56 @@ def format_accel_data(data, ids_to_format):
 # this function specifically obtains data from scanner_data_pid
 # this is not a general function
 def get_data(conn, vin, rtc_start, rtc_end):
-  trip_query = "SELECT * FROM scanner_data_pid WHERE vin = '%s' and rtc_time >= %d and rtc_time <= %d limit 10" % (
+  trip_query = "SELECT data FROM scanner_data_pid WHERE vin = '%s' and rtc_time >= %d and rtc_time <= %d limit 10" % (
       vin, rtc_start, rtc_end)
 
   return conn.query(trip_query)
 
 
+def get_testcase_data(conn, device, limit):
+  # testcase_query = "SELECT data FROM scanner_data_pid where device_type = '{0}' ORDER BY rtc_time desc limit {1}".format(
+  #     device, limit)
+  testcase_query = "SELECT data FROM scanner_data_pid where device_type = '{0}' and rtc_time < 1571239008 limit {1}".format(
+      device, limit)
+  return conn.query(testcase_query)
+
+
 def main():
-  # dev = "local"
-  dev = "staging"
-  db_config = read_json_file("connector/config.json")[dev]
+  # env = "local"
+  env = "staging"
+  db_config = read_json_file("connector/config.json")[env]
   conn = Connector(db_config)
 
-  # vin = "JTMBK32V086045753"  # "2T1BU4EEXBC751673"  # "1G1JC5444R7252367"
-  # rtc_start = 1578170804  # 1577113682  # 1573767218
-  # rtc_end = 1578171833  # 1577115020  # 1573769218
+  # # vin = "JTMBK32V086045753"  # "2T1BU4EEXBC751673"  # "1G1JC5444R7252367"
+  # # rtc_start = 1578170804  # 1577113682  # 1573767218
+  # # rtc_end = 1578171833  # 1577115020  # 1573769218
 
-  vin = "2T1BU4EEXBC751673"
-  rtc_start = 1577113682
-  rtc_end = 1577115020
+  # vin = "2T1BU4EEXBC751673"
+  # rtc_start = 1577113682
+  # rtc_end = 1577115020
 
-  # This list contains the id values whose data property should formatted
-  ids_to_format = ["accelerometer", "210D", "speed"]
-  # ids_to_format = ["210C", "210F", "2142"]
+  # # This list contains the id values whose data property should formatted
+  # ids_to_format = ["accelerometer", "210D", "speed"]
+  ids_to_format = ["210C", "210F", "2142"]
 
-  data = get_data(conn, vin, rtc_start, rtc_end)
-  formatted_data = format_accel_data(data, ids_to_format)
-  formatted_data_b = format_data(data, ["210C", "210F", "2142"])
+  # data = get_data(conn, vin, rtc_start, rtc_end)
+  # formatted_data = format_accel_data(data, ids_to_format)
+  # formatted_data_b = format_data(data, ["210C", "210F", "2142"])
+
   # formatted_data = format_data(data, ids_to_format)
 
+  device_list = ["danlaw", "obd215B", "geotab"]
+  accepted_pids = ["210C", "210F", "2142"]
+
+  data = get_testcase_data(conn, "geotab", "100")
+  formatted_data = format_data(data, ids_to_format)
+
+  write_json_file("test_data/__test__.json", formatted_data)
+
+  print(len(data))
   print(formatted_data)
-  print("")
-  print(formatted_data_b)
+  # print("")
+  # print(formatted_data_b)
 
 
 main()
